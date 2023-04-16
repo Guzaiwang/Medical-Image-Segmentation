@@ -23,7 +23,6 @@ def configure_logger(rank, log_path=None):
         format=LOG_FORMAT,
         datefmt=LOG_DATEFMT,
         handlers=handlers,
-        force=True,
     )
 
 

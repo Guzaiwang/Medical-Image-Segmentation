@@ -81,3 +81,17 @@ def calculate_dice(pred, target, C):
 
     return dice, intersection, summ
 
+
+def calculate_dice_binary(pred, target, C): 
+    # pred and target are torch tensor
+    # print("pred.size", pred.size())
+    # print("target.size", target.size())
+    smooth = 0.0001
+    i = torch.sum(pred)
+    j = torch.sum(target)
+    intersection = torch.sum(pred*target)
+    score = (2. * intersection + smooth) / (i + j + smooth)
+    dice = 1 - score.mean()
+    return dice, dice, dice
+
+

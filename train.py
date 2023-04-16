@@ -58,9 +58,9 @@ def train_net(net, args, ema_net=None, fold_idx=0):
         trainset, 
         batch_size=args.batch_size,
         shuffle=True, 
-        pin_memory=(args.aug_device != 'gpu'), 
+        pin_memory=True, 
         num_workers=args.num_workers, 
-        persistent_workers=(args.num_workers>0)
+        # persistent_workers=(args.num_workers>0)
     )
 
     testset = get_dataset(args, mode='test', fold_idx=fold_idx)
@@ -77,7 +77,8 @@ def train_net(net, args, ema_net=None, fold_idx=0):
     if args.resume:
         resume_load_optimizer_checkpoint(optimizer, args)
 
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda().float())
+    # criterion = nn.CrossEntropyLoss(weight=torch.tensor(args.weight).cuda().float())
+    criterion = nn.CrossEntropyLoss()
     criterion_dl = DiceLoss()
     
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
@@ -209,7 +210,8 @@ def train_epoch(trainLoader, net, ema_net, optimizer, epoch, writer, criterion, 
                 for j in range(len(result)):
                     loss += args.aux_weight[j] * (criterion(result[j], label.squeeze(1)) + criterion_dl(result[j], label))
             else:
-                loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
+                # loss = criterion(result, label.squeeze(1)) + criterion_dl(result, label)
+                loss = criterion(result, label.squeeze(1))
 
 
             loss.backward()
@@ -246,7 +248,7 @@ def get_parser():
     parser.add_argument('--amp', action='store_true', help='if use the automatic mixed precision for faster training')
     parser.add_argument('--torch_compile', action='store_true', help='use torch.compile, only supported by pytorch2.0')
 
-    parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    parser.add_argument('--batch_size', default=16, type=int, help='batch size')
     parser.add_argument('--resume', action='store_true', help='if resume training from checkpoint')
     parser.add_argument('--load', type=str, default=False, help='load pretrained model')
     parser.add_argument('--cp_path', type=str, default='./exp/', help='checkpoint path')
@@ -298,8 +300,8 @@ if __name__ == '__main__':
     
     args = get_parser()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    torch.multiprocessing.set_start_method('spawn')
-    torch.multiprocessing.set_sharing_strategy('file_system')
+    # torch.multiprocessing.set_start_method('spawn')
+    # torch.multiprocessing.set_sharing_strategy('file_system')
     
     args.log_path = args.log_path + '%s/'%args.dataset
     
@@ -308,11 +310,12 @@ if __name__ == '__main__':
         random.seed(args.reproduce_seed)
         np.random.seed(args.reproduce_seed)
         torch.manual_seed(args.reproduce_seed)
+        torch.backends.cudnn.benchmark = True
 
-        if hasattr(torch, 'set_deterministic'):
-            torch.set_deterministic(True)
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
+        # if hasattr(torch, 'set_deterministic'):
+        #     torch.set_deterministic(True)
+        # torch.backends.cudnn.benchmark = False
+        # torch.backends.cudnn.deterministic = True
    
     Dice_list, HD_list, ASD_list = [], [], []
 

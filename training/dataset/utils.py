@@ -7,6 +7,10 @@ def get_dataset(args, mode, **kwargs):
             from .dim2.dataset_acdc import CMRDataset
 
             return CMRDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+        if args.dataset == 'drive':
+            from .dim2.dataset_drive import DRIVEDataset
+
+            return DRIVEDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
 
     else:
         if args.dataset == 'acdc':

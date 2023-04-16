@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from inference.utils import get_inference
-from metric.utils import calculate_distance, calculate_dice, calculate_dice_split
+from metric.utils import calculate_distance, calculate_dice, calculate_dice_split, calculate_dice_binary
 import numpy as np
 from .utils import concat_all_gather, remove_wrap_arounds
 import logging
@@ -31,19 +31,19 @@ def validation(net, dataloader, args):
 
     with torch.no_grad():
         iterator = tqdm(dataloader)
-        for (images, labels, spacing) in iterator:
+        for (images, labels) in iterator:
             # spacing here is used for distance metrics calculation
             
             inputs, labels = images.float().cuda(), labels.cuda().to(torch.int8)
             
-            if args.dimension == '2d':
-                inputs = inputs.permute(1, 0, 2, 3)
+            # if args.dimension == '2d':
+            #     inputs = inputs.permute(1, 0, 2, 3)
             
             pred = inference(net, inputs, args)
 
             _, label_pred = torch.max(pred, dim=1)
             label_pred = label_pred.to(torch.int8)
-            
+
             if args.dimension == '2d':
                 labels = labels.squeeze(0)
             else:
@@ -51,38 +51,41 @@ def validation(net, dataloader, args):
                 labels = labels.squeeze(0).squeeze(0)
                
 
-            tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
+            # tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
             # comment this for fast debugging (HD and ASD computation for large 3D images is slow)
             #tmp_ASD_list = np.zeros(args.classes-1)
             #tmp_HD_list = np.zeros(args.classes-1)
 
-            tmp_ASD_list =  np.clip(np.nan_to_num(tmp_ASD_list, nan=500), 0, 500)
-            tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
+            # tmp_ASD_list =  np.clip(np.nan_to_num(tmp_ASD_list, nan=500), 0, 500)
+            # tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
         
             # The dice evaluation is based on the whole image. If image size too big, might cause gpu OOM.
             # Use calculate_dice_split instead if got OOM, it will evaluate patch by patch to reduce gpu memory consumption.
-            #dice, _, _ = calculate_dice(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
-            dice, _, _ = calculate_dice_split(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
+            dice, _, _ = calculate_dice_binary(label_pred.view(-1, 1), labels.view(-1, 1), 2)
+            # dice, _, _ = calculate_dice_split(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
 
             # exclude background
-            dice = dice.cpu().numpy()[1:]
+            # dice = dice.cpu().numpy()[1:]
+            dice = dice.cpu().numpy()
 
             unique_cls = torch.unique(labels)
             for cls in range(0, args.classes-1):
                 if cls+1 in unique_cls: 
                     # in case some classes are missing in the GT
                     # only classes appear in the GT are used for evaluation
-                    ASD_list[cls].append(tmp_ASD_list[cls])
-                    HD_list[cls].append(tmp_HD_list[cls])
-                    dice_list[cls].append(dice[cls])
+                    # ASD_list[cls].append(tmp_ASD_list[cls])
+                    # HD_list[cls].append(tmp_HD_list[cls])
+                    dice_list[cls].append(dice)
 
     out_dice = []
     out_ASD = []
     out_HD = []
     for cls in range(0, args.classes-1):
         out_dice.append(np.array(dice_list[cls]).mean())
-        out_ASD.append(np.array(ASD_list[cls]).mean())
-        out_HD.append(np.array(HD_list[cls]).mean())
+        out_ASD.append(np.array(dice_list[cls]).mean())
+        out_HD.append(np.array(dice_list[cls]).mean())
+        # out_ASD.append(np.array(ASD_list[cls]).mean())
+        # out_HD.append(np.array(HD_list[cls]).mean())
 
     return np.array(out_dice), np.array(out_ASD), np.array(out_HD)
 
