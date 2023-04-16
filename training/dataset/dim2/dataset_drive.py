@@ -18,7 +18,7 @@ from .dataset_drive_utils import randomRotate90, randomVerticleFlip, randomHoriz
 
 
 class DRIVEDataset(Dataset):
-    def __init__(self, args, mode='train', k_fold=5, k=0, seed=0):
+    def __init__(self, args, mode='train'):
 
         self.mode = mode
         self.args = args

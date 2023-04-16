@@ -1,6 +1,6 @@
 # DATA
 data_root: /DATA/i2r/guzw/dataset/
-classes: 2
+classes: 1
 modality: fundus
 
 
@@ -21,10 +21,10 @@ aug_device: 'cpu'
 split_seed: 0     # random seed for train/test split (shuffle) before setting cross validation fold
 k_fold: 1   # number of folds in cross validation
 
-optimizer: adamw
-base_lr: 0.0005
+optimizer: adam
+base_lr: 0.0002
 betas: [0.9, 0.999]
-weight_decay: 0.05  
+weight_decay: 0
 # weight: [1,1]  # weitght of each class in the loss function
 rlt: 1 # relation between CE and Dice loss
 

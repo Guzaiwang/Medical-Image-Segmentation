@@ -86,10 +86,10 @@ def exp_lr_scheduler_with_warmup(optimizer, init_lr, epoch, warmup_epoch, max_ep
         return lr
 
     else:
-        lr = init_lr * (1 - epoch / max_epoch)**0.9
+        # lr = init_lr * (1 - epoch / max_epoch)**0.9
+        lr = init_lr
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
-
     return lr
 
 

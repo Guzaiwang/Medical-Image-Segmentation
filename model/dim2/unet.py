@@ -40,4 +40,4 @@ class UNet(nn.Module):
         out = self.up4(out, x1) 
         out = self.outc(out)
 
-        return out 
+        return F.sigmoid(out) 

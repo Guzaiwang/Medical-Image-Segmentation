@@ -10,7 +10,7 @@ def get_dataset(args, mode, **kwargs):
         if args.dataset == 'drive':
             from .dim2.dataset_drive import DRIVEDataset
 
-            return DRIVEDataset(args, mode=mode, k_fold=args.k_fold, k=kwargs['fold_idx'], seed=args.split_seed)
+            return DRIVEDataset(args, mode=mode)
 
     else:
         if args.dataset == 'acdc':
