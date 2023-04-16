@@ -17,9 +17,10 @@ def get_model(args, pretrain=False):
                 raise ValueError('No pretrain model available')
             return UNetPlusPlus(args.in_chan, args.classes, args.base_chan)
         if args.model == 'cenet':
-            from .dim2 import UNetPlusPlus
+            from .dim2 import CEnet
             if pretrain:
                 raise ValueError('No pretrain model available')
+            return CEnet(args.in_chan, args.classes, args.base_chan, block=args.block)
         if args.model == 'attention_unet':
             from .dim2 import AttentionUNet
             if pretrain:
