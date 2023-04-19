@@ -6,3 +6,4 @@ from .transunet import VisionTransformer
 from .swin_unet import SwinUnet
 from .medformer import MedFormer
 from .cenet import CEnet
+from .unet_res import UNet_Res

@@ -64,7 +64,7 @@ class UNetPlusPlus(nn.Module):
 
         output = self.output(x0_4)
 
-        return output
+        return F.sigmoid(output)
 
 
     def make_layer(self, in_ch, out_ch, num_block, block):

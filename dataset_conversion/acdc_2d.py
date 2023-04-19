@@ -36,13 +36,13 @@ def ResampleCMRImage(imImage, imLabel, save_path, patient_name, count, target_sp
 if __name__ == '__main__':
 
 
-    src_path = '/research/cbim/medical/medical-share/public/ACDC/raw/training/'
-    tgt_path = '/research/cbim/medical/yg397/tgt_dir/'
+    src_path = '/DATA/i2r/guzw/dataset/database/testing/'
+    tgt_path = '/DATA/i2r/guzw/dataset/ACDC_2D/testing/'
 
 
 
 
-    patient_list = list(range(1, 101))
+    patient_list = list(range(101, 151))
 
     name_list = []
     for idx in patient_list:

@@ -1,16 +1,104 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable as V
 import torch.distributed as dist
 from inference.utils import get_inference
 from metric.utils import calculate_distance, calculate_dice, calculate_dice_split, calculate_dice_binary
 import numpy as np
+from numpy import *
 from .utils import concat_all_gather, remove_wrap_arounds
+import cv2
 import logging
 import pdb
 from utils import is_master
 from tqdm import tqdm
 import SimpleITK as sitk
+from PIL import Image
+
+import sklearn.metrics as metrics
+
+
+def accuracy(pred_mask, label):
+    '''
+    acc=(TP+TN)/(TP+FN+TN+FP)
+    '''
+    pred_mask = pred_mask.astype(np.uint8)
+    TP, FN, TN, FP = [0, 0, 0, 0]
+    for i in range(label.shape[0]):
+        for j in range(label.shape[1]):
+            if label[i][j] == 1:
+                if pred_mask[i][j] == 1:
+                    TP += 1
+                elif pred_mask[i][j] == 0:
+                    FN += 1
+            elif label[i][j] == 0:
+                if pred_mask[i][j] == 1:
+                    FP += 1
+                elif pred_mask[i][j] == 0:
+                    TN += 1
+    acc = (TP + TN) / (TP + FN + TN + FP)
+    sen = TP / (TP + FN)
+    return acc, sen
+
+
+def mask_iou(mask1, mask2):
+    mask1_area = np.count_nonzero(mask1 == 1)  # I assume this is faster as mask1 == 1 is a bool array
+    mask2_area = np.count_nonzero(mask2 == 1)
+    intersection = np.count_nonzero(np.logical_and(mask1, mask2))
+    iou = intersection / (mask1_area + mask2_area - intersection)
+    return iou
+
+
+def calculate_auc_test(prediction, label):
+    # read images
+    # convert 2D array into 1D array
+    result_1D = prediction.flatten()
+    label_1D = label.flatten()
+
+    label_1D = label_1D
+    auc = metrics.roc_auc_score(label_1D.astype(np.uint8), result_1D)
+
+    return auc
+
+def dice(im1, im2, empty_score=1.0):
+    """
+    This code is from https://gist.github.com/brunodoamaral/e130b4e97aa4ebc468225b7ce39b3137
+    Computes the Dice coefficient, a measure of set similarity.
+    Parameters
+    ----------
+    im1 : array-like, bool
+        Any array of arbitrary size. If not boolean, will be converted.
+    im2 : array-like, bool
+        Any other array of identical size. If not boolean, will be converted.
+    Returns
+    -------
+    dice : float
+        Dice coefficient as a float on range [0,1].
+        Maximum similarity = 1
+        No similarity = 0
+        Both are empty (sum eq to zero) = empty_score
+
+    Notes
+    -----
+    The order of inputs for `dice` is irrelevant. The result will be
+    identical if `im1` and `im2` are switched.
+    """
+    im1 = np.asarray(im1).astype(np.bool)
+    im2 = np.asarray(im2).astype(np.bool)
+
+    if im1.shape != im2.shape:
+        raise ValueError("Shape mismatch: im1 and im2 must have the same shape.")
+
+    im_sum = im1.sum() + im2.sum()
+    if im_sum == 0:
+        return empty_score
+
+    # Compute Dice coefficient
+    intersection = np.logical_and(im1, im2)
+
+    return 2. * intersection.sum() / im_sum
+
 
 
 def validation(net, dataloader, args):
@@ -89,8 +177,54 @@ def validation(net, dataloader, args):
 
     return np.array(out_dice), np.array(out_ASD), np.array(out_HD)
 
+def validation2d(net, dataset, args):
+    
+    net.eval()
 
+    inference = get_inference(args)
+    
+    logging.info("Evaluating")
 
+    # print(dataset.img_path_list)
+    # print(dataset.msk_path_list)
+    with torch.no_grad():
+        auc_list = []
+        acc_list = []
+        sen_list = []
+        iou_list = []
+        dice_list = []
+        for imd_idx in range(len(dataset.img_path_list)):
+            img = cv2.imread(dataset.img_path_list[imd_idx])
+            img = cv2.resize(img, (448, 448))
+            label = np.array(Image.open(dataset.msk_path_list[imd_idx]))
+            if not args.test_aug:
+                # without test augmentation
+                img = img[None].transpose(0, 3, 1, 2)
+                img = img / 255.0 * 3.2 - 1.6
+                threshold = 0.5
+                inputs = V(torch.Tensor(img).cuda())
+                pred = inference(net, inputs, args)
+                pred[pred > threshold] = 1
+                pred[pred <= threshold] = 0
+                label_pred = pred.to(torch.int8)
+            label_pred = label_pred.squeeze().cpu().data.numpy().astype(np.float32)
+            label_pred = cv2.resize(label_pred, (np.shape(label)[1], np.shape(label)[0]))
+            label_pred[label_pred > threshold] = 1
+            label_pred[label_pred <=threshold] = 0
+            auc = calculate_auc_test(label_pred, label)
+            acc, sen = accuracy(label_pred, label)
+            iou_loss = 1 - mask_iou(label_pred, label)
+            dice_loss = dice(label_pred, label)
+            auc_list.append(auc)
+            acc_list.append(acc)
+            sen_list.append(sen)
+            iou_list.append(iou_loss)
+            dice_list.append(dice_loss)
+        print("auc value is", mean(auc_list))
+        print("acc value is", mean(acc_list))
+        print("sen value is", mean(sen_list))
+        print("iou_loss value is", mean(iou_list))
+        print("dice value is", mean(dice_list))
 
 def validation_ddp(net, dataloader, args):
     

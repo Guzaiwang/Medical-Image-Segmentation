@@ -5,7 +5,7 @@ modality: fundus
 
 
 # MODEL
-arch: unet
+arch: unet++
 in_chan: 3
 base_chan: 32
 block: SingleConv

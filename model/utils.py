@@ -7,10 +7,10 @@ def get_model(args, pretrain=False):
     
     if args.dimension == '2d':
         if args.model == 'unet':
-            from .dim2 import UNet
+            from .dim2 import UNet_Res
             if pretrain:
                 raise ValueError('No pretrain model available')
-            return UNet(args.in_chan, args.classes, args.base_chan, block=args.block)
+            return UNet_Res(args.in_chan, args.classes, args.base_chan, block=args.block)
         if args.model == 'unet++':
             from .dim2 import UNetPlusPlus
             if pretrain:

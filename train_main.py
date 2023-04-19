@@ -16,7 +16,7 @@ from torch.utils import data
 
 from training.utils import update_ema_variables
 from training.losses import DiceLoss, Dice_bce_loss
-from training.validation import validation
+from training.validation import validation, validation2d
 from training.utils import (
     exp_lr_scheduler_with_warmup, 
     log_evaluation_result, 
@@ -89,7 +89,6 @@ def train_net(net, args, ema_net=None):
         logging.info(f"Current lr: {exp_scheduler:.4e}")
         
         epoch_loss_value = train_epoch(trainLoader, net, ema_net, optimizer, epoch, criterion, criterion_dl, scaler, args)
-        print(epoch_loss_value)
         ########################################################################################
         # Evaluation, save checkpoint and log training info
         net_for_eval = ema_net if args.ema else net 
@@ -102,6 +101,10 @@ def train_net(net, args, ema_net=None):
             'optimizer_state_dict': optimizer.state_dict(),
         }, f"{args.cp_path}{args.dataset}/{args.unique_name}/fold_latest.pth")
 
+        # if (epoch+1) % args.val_freq == 0:
+        if epoch > 50 and (epoch+1) % args.val_freq == 0:
+
+            validation2d(net_for_eval, testset, args)
 
 
 def train_epoch(trainLoader, net, ema_net, optimizer, epoch, criterion, criterion_dl, scaler, args):

@@ -1,0 +1,7 @@
+CUDA_LAUNCH_BLOCKING=1 python train_main.py --model unet --dimension 2d --dataset drive --batch_size 4 --unique_name test_pipeline --gpu 7 >> ./log/exp_result.txt 2>&1 &
+
+
+python train_main.py --model unet --dimension 2d --dataset drive --batch_size 4 --unique_name unet2d_drive_gpu_7 --gpu 7 >> ./logs/unet2d_drive_gpu_7.txt 2>&1 &
+
+
+python train_main.py --model unet++ --dimension 2d --dataset drive --batch_size 4 --unique_name unetpp_drive_gpu_6 --gpu 6 >> ./logs/unetpp_drive_gpu_6.txt 2>&1 &

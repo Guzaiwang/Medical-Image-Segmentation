@@ -64,11 +64,10 @@ class DRIVEDataset(Dataset):
         
         mask = np.array(Image.open(tensor_lab_path))
 
-        img = cv2.resize(img, (448, 448))
-        mask = cv2.resize(mask, (448, 448))
         if self.mode == 'train':
             
-
+            img = cv2.resize(img, (448, 448))
+            mask = cv2.resize(mask, (448, 448))
             img = randomHueSaturationValue(img,
                                     hue_shift_limit=(-30, 30),
                                     sat_shift_limit=(-5, 5),

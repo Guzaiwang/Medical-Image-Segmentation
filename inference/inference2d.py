@@ -26,7 +26,8 @@ def inference_whole_image(net, img, args=None):
         if isinstance(pred, tuple) or isinstance(pred, list):
             pred = pred[0]
 
-    return F.softmax(pred, dim=1)
+    # return F.softmax(pred, dim=1)
+    return pred
 
 
 def inference_sliding_window(net, img, args):
