@@ -119,13 +119,13 @@ def validation(net, dataloader, args):
 
     with torch.no_grad():
         iterator = tqdm(dataloader)
-        for (images, labels) in iterator:
+        for (images, labels, spacing) in iterator:
             # spacing here is used for distance metrics calculation
             
             inputs, labels = images.float().cuda(), labels.cuda().to(torch.int8)
             
-            # if args.dimension == '2d':
-            #     inputs = inputs.permute(1, 0, 2, 3)
+            if args.dimension == '2d':
+                inputs = inputs.permute(1, 0, 2, 3)
             
             pred = inference(net, inputs, args)
 
@@ -139,30 +139,30 @@ def validation(net, dataloader, args):
                 labels = labels.squeeze(0).squeeze(0)
                
 
-            # tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
+            tmp_ASD_list, tmp_HD_list = calculate_distance(label_pred, labels, spacing[0], args.classes)
             # comment this for fast debugging (HD and ASD computation for large 3D images is slow)
             #tmp_ASD_list = np.zeros(args.classes-1)
             #tmp_HD_list = np.zeros(args.classes-1)
 
-            # tmp_ASD_list =  np.clip(np.nan_to_num(tmp_ASD_list, nan=500), 0, 500)
-            # tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
+            tmp_ASD_list =  np.clip(np.nan_to_num(tmp_ASD_list, nan=500), 0, 500)
+            tmp_HD_list = np.clip(np.nan_to_num(tmp_HD_list, nan=500), 0, 500)
         
             # The dice evaluation is based on the whole image. If image size too big, might cause gpu OOM.
             # Use calculate_dice_split instead if got OOM, it will evaluate patch by patch to reduce gpu memory consumption.
-            dice, _, _ = calculate_dice_binary(label_pred.view(-1, 1), labels.view(-1, 1), 2)
-            # dice, _, _ = calculate_dice_split(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
+            # dice, _, _ = calculate_dice_binary(label_pred.view(-1, 1), labels.view(-1, 1), 2)
+            dice, _, _ = calculate_dice_split(label_pred.view(-1, 1), labels.view(-1, 1), args.classes)
 
             # exclude background
-            # dice = dice.cpu().numpy()[1:]
-            dice = dice.cpu().numpy()
+            dice = dice.cpu().numpy()[1:]
+            # dice = dice.cpu().numpy()
 
             unique_cls = torch.unique(labels)
             for cls in range(0, args.classes-1):
                 if cls+1 in unique_cls: 
                     # in case some classes are missing in the GT
                     # only classes appear in the GT are used for evaluation
-                    # ASD_list[cls].append(tmp_ASD_list[cls])
-                    # HD_list[cls].append(tmp_HD_list[cls])
+                    ASD_list[cls].append(tmp_ASD_list[cls])
+                    HD_list[cls].append(tmp_HD_list[cls])
                     dice_list[cls].append(dice)
 
     out_dice = []

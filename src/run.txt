@@ -5,3 +5,9 @@ python train_main.py --model unet --dimension 2d --dataset drive --batch_size 4 
 
 
 python train_main.py --model unet++ --dimension 2d --dataset drive --batch_size 4 --unique_name unetpp_drive_gpu_6 --gpu 6 >> ./logs/unetpp_drive_gpu_6.txt 2>&1 &
+
+
+python train.py --model unet++ --dimension 2d --dataset acdc --batch_size 4 --unique_name unetpp_acdc_2d_gpu_5 --gpu 5 >> ./logs/unetpp_drive_gpu_6.txt 2>&1 &
+
+
+python train.py --model cenet --dimension 2d --dataset acdc --batch_size 4 --unique_name cenet_acdc_2d_gpu_5 --gpu 5 >> ./logs/cenet_acdc_2d_gpu_5.txt 2>&1 &

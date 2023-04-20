@@ -5,7 +5,7 @@ modality: mri
 
 
 #MODEL
-arch: unet++
+arch: cenet
 in_chan: 1
 base_chan: 32
 
@@ -40,7 +40,7 @@ print_freq: 5
 #VALIDATION
 ema: True
 ema_alpha: 0.99
-val_freq: 10
+val_freq: 2
 
 
 
